@@ -155,7 +155,7 @@ if 'usdPriceEth' not in st.session_state:
 
 
 @st.cache(ttl=6 * 60 * 60, suppress_st_warning=True)  # 6 hours
-def fetch_data(chain: Chain, user_address):
+def fetch_data(chain: Chain, user_address: str):
     deposit_str = 'depositHistory' if chain in (
         Chain.Ethereum, Chain.Avalanche_v2, Chain.Polygon_V2) else 'supplyHistory'
     payload = {
@@ -213,7 +213,7 @@ def fetch_data(chain: Chain, user_address):
   }
   
 }
-""" % (user_address, deposit_str)
+""" % (user_address.lower(), deposit_str)
     }
     res = requests.post(url=get_chain_info(chain)[0],
                         json=payload).json()
@@ -326,9 +326,8 @@ def generate_supply_charts(data):
     fig.update_traces(textposition='inside', textinfo='value+label', insidetextorientation='radial')
     fig.update_layout(title_x=0, margin=dict(l=0, r=10, b=30, t=30), yaxis_title=None, xaxis_title=None)
     c3.plotly_chart(fig, use_container_width=True)
-    # -------------------------------------------------
+    # ---------------------------- Deposits
     c1, c2 = st.columns(2)
-    # ---------------------------- Deposit
     fig = px.bar(df_deposits, x='str_date', y='amount', color='symbol', title="Daily Deposit",
                  template='seaborn')
     fig.update_traces(hovertemplate=None)
@@ -351,7 +350,6 @@ def generate_supply_charts(data):
     fig.update_traces(hovertemplate=None)
     fig.update_layout(hovermode="x unified")
     fig.update_layout(title_x=0, margin=dict(l=0, r=10, b=30, t=30), yaxis_title=None, xaxis_title=None)
-    # fig.update_traces(width=5000*3600*24*0.8)
     c1.plotly_chart(fig, use_container_width=True)
 
     fig = px.bar(df_withdraws, x='str_date', y='amount_usd', color='symbol', title="Daily Withdrawals in USD",
@@ -359,7 +357,6 @@ def generate_supply_charts(data):
     fig.update_traces(hovertemplate=None)
     fig.update_layout(hovermode="x unified")
     fig.update_layout(title_x=0, margin=dict(l=0, r=10, b=30, t=30), yaxis_title=None, xaxis_title=None)
-    # fig.update_traces(width=5000*3600*24*0.8)
     c2.plotly_chart(fig, use_container_width=True)
 
     # ----------------------- Borrow
@@ -368,7 +365,6 @@ def generate_supply_charts(data):
     fig.update_traces(hovertemplate=None)
     fig.update_layout(hovermode="x unified")
     fig.update_layout(title_x=0, margin=dict(l=0, r=10, b=30, t=30), yaxis_title=None, xaxis_title=None)
-    # fig.update_traces(width=5000*3600*24*0.8)
     c1.plotly_chart(fig, use_container_width=True)
 
     fig = px.bar(df_borrows, x='str_date', y='amount_usd', color='symbol', title="Daily Borrow in USD",
@@ -376,7 +372,6 @@ def generate_supply_charts(data):
     fig.update_traces(hovertemplate=None)
     fig.update_layout(hovermode="x unified")
     fig.update_layout(title_x=0, margin=dict(l=0, r=10, b=30, t=30), yaxis_title=None, xaxis_title=None)
-    # fig.update_traces(width=5000*3600*24*0.8)
     c2.plotly_chart(fig, use_container_width=True)
     #  ----------------------------------- Repay
     fig = px.bar(df_repays, x='str_date', y='amount', color='symbol', title="Daily Repay",
@@ -384,7 +379,6 @@ def generate_supply_charts(data):
     fig.update_traces(hovertemplate=None)
     fig.update_layout(hovermode="x unified")
     fig.update_layout(title_x=0, margin=dict(l=0, r=10, b=30, t=30), yaxis_title=None, xaxis_title=None)
-    # fig.update_traces(width=5000*3600*24*0.8)
     c1.plotly_chart(fig, use_container_width=True)
 
     fig = px.bar(df_repays, x='str_date', y='amount_usd', color='symbol', title="Daily Repay in USD",
@@ -392,21 +386,25 @@ def generate_supply_charts(data):
     fig.update_traces(hovertemplate=None)
     fig.update_layout(hovermode="x unified")
     fig.update_layout(title_x=0, margin=dict(l=0, r=10, b=30, t=30), yaxis_title=None, xaxis_title=None)
-    # fig.update_traces(width=5000*3600*24*0.8)
     c2.plotly_chart(fig, use_container_width=True)
     #  -------------------------------
 
 
-with st.spinner('Updating Report...'):
+with st.spinner('Updating Dashboard...'):
     c1, c2, c3 = st.columns((1, 2, 1))
 
-    activation_function = c2.selectbox('Choose a Chain',
-                                       ['Ethereum', 'Polygon v2', 'Polygon v3', 'Arbitrum', 'Optimism', 'Avalanche v2',
-                                        'Avalanche v3', 'Fantom', 'Harmony'])
+    with c2.form("my_form"):
+        activation_function = st.selectbox('Choose a Chain',
+                                           ['Ethereum', 'Polygon v2', 'Polygon v3', 'Arbitrum', 'Optimism',
+                                            'Avalanche v2',
+                                            'Avalanche v3', 'Fantom', 'Harmony'])
 
-    input_user_address = c2.text_input('Enter User Address:',
-                                       '0x429801692ae55c2d706cf57276fe9f71abcce3cc',
-                                       placeholder='Input the User Address')
+        input_user_address = st.text_input('Enter User Address:',
+                                           '0x429801692ae55c2d706cf57276fe9f71abcce3cc',
+                                           placeholder='Input the User Address')
+        submitted = st.form_submit_button("Submit")
+
+
     st.markdown('---')
 
     if activation_function == 'Ethereum':
@@ -451,11 +449,10 @@ with st.spinner('Updating Report...'):
 
     if activation_function == 'Arbitrum':
         selected_chain = Chain.Arbitrum
-
         chart_data = fetch_data(Chain.Arbitrum, input_user_address)
         generate_supply_charts(chart_data)
 
-# # end latest
+# # end
 st.write('')
 st.write('')
 st.write('')
@@ -470,4 +467,10 @@ st.markdown("##### Contact:\n"
             "- https://twitter.com/misaghlb \n"
             "- misaghlb@live.com\n"
             "- https://www.linkedin.com/in/misagh-lotfi/\n"
+            )
+
+st.markdown("##### Sources:\n"
+            "- https://thegraph.com/hosted-service/subgraph/aave/protocol-v2 \n"
+            "- https://api.thegraph.com/subgraphs/name/wardenluna/token-prices-optimism \n"
+            "- code: https://github.com/Misaghlb/aave_user_dashboard \n"
             )
